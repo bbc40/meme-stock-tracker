@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Meme Stock Daily Tracker</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #0d1117;
+      color: #c9d1d9;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #30363d;
+    }
+    th {
+      background-color: #161b22;
+    }
+    tr:hover {
+      background-color: #21262d;
+    }
+    .section {
+      margin-bottom: 40px;
+    }
+    iframe {
+      width: 100%;
+      height: 400px;
+      border: none;
+      margin-top: 20px;
+    }
+    @media (max-width: 600px) {
+      table, th, td {
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Meme Stock Daily Tracker</h1>
+
+  <div class="section">
+    <h2>📊 Watchlist Overview (Auto-updated)</h2>
+    <!-- Replace below with actual stock data API integration -->
+    <iframe src="https://www.tradingview.com/embed-widget/market-overview/?locale=en#%7B%22showChart%22%3Atrue%2C%22locale%22%3A%22en%22%2C%22market%22%3A%22stocks%22%2C%22width%22%3A%22100%25%22%2C%22height%22%3A400%2C%22tabs%22%3A[%22overview%22]%2C%22symbols%22%3A[%7B%22s%22%3A%22NYSE%3AGME%22%7D%2C%7B%22s%22%3A%22NYSE%3AAMC%22%7D%2C%7B%22s%22%3A%22NYSE%3APLTR%22%7D%2C%7B%22s%22%3A%22NASDAQ%3AWKHS%22%7D]%7D"></iframe>
+  </div>
+
+  <div class="section">
+    <h2>🔔 Custom Alerts Setup</h2>
+    <ul>
+      <li>✅ GME alert @ $22.00 – Price breakout trigger</li>
+      <li>✅ AMC alert if volume > 25M – Possible squeeze start</li>
+      <li>✅ PLTR RSI alert < 30 – Oversold opportunity</li>
+      <li>✅ WKHS price + volume surge – Squeeze watch</li>
+    </ul>
+    <p>Use tools like <a href="https://www.tradingview.com/alerts/" target="_blank">TradingView Alerts</a> or <a href="https://www.webull.com/" target="_blank">Webull</a> to automate this.</p>
+  </div>
+
+  <div class="section">
+    <h2>📈 Sentiment Trends</h2>
+    <iframe src="https://apewisdom.io/" title="WSB Sentiment Tracker"></iframe>
+  </div>
+
+  <div class="section">
+    <h2>💡 Options Flow (Live)</h2>
+    <iframe src="https://unusualwhales.com/live" title="Unusual Options Flow"></iframe>
+  </div>
+
+</body>
+</html>
