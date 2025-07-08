@@ -3,45 +3,193 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Meme Stock Daily Tracker</title>
+  <title>Meme Stock Screener Dashboard</title>
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#0d1117"/>
-  <link rel="stylesheet" href="style.css" />
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js');
-      });
+  <style>
+    body {
+      background-color: #0d1117;
+      color: white;
+      font-family: Arial, sans-serif;
+      margin: 20px;
     }
-  </script>
+    h1, h2 {
+      color: #58a6ff;
+    }
+    th.sortable:hover {
+      cursor: pointer;
+      text-decoration: underline;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      border: 1px solid #30363d;
+      padding: 8px;
+      text-align: center;
+    }
+    .highlight {
+      background-color: #fff3cd;
+      color: black;
+    }
+    button {
+      background-color: #238636;
+      border: none;
+      color: white;
+      padding: 8px 16px;
+      margin: 10px 0;
+      cursor: pointer;
+      font-size: 14px;
+      border-radius: 5px;
+    }
+    button:hover {
+      background-color: #2ea043;
+    }
+    label {
+      margin-right: 15px;
+      font-size: 14px;
+    }
+  </style>
 </head>
 <body>
-  <h1>Meme Stock Daily Tracker</h1>
+  <h1>Meme Stock Screener Dashboard</h1>
 
   <div class="section">
-    <h2>📊 Watchlist Overview (Auto-updated)</h2>
-    <iframe src="https://www.tradingview.com/embed-widget/market-overview/?locale=en#%7B%22showChart%22%3Atrue%2C%22locale%22%3A%22en%22%2C%22market%22%3A%22stocks%22%2C%22width%22%3A%22100%25%22%2C%22height%22%3A400%2C%22tabs%22%3A[%22overview%22]%2C%22symbols%22%3A[%7B%22s%22%3A%22NYSE%3AGME%22%7D%2C%7B%22s%22%3A%22NYSE%3AAMC%22%7D%2C%7B%22s%22%3A%22NYSE%3APLTR%22%7D%2C%7B%22s%22%3A%22NASDAQ%3AWKHS%22%7D]%7D"></iframe>
+    <h2>📊 Real-Time Stock Data</h2>
+    <label>
+      <input type="checkbox" id="filterPrice" /> Filter Price > $5
+    </label>
+    <label>
+      <input type="checkbox" id="filterVolume" /> Filter Volume > 1M
+    </label>
+    <button onclick="exportToCSV()">📥 Export to CSV</button>
+    <table id="stock-table">
+      <thead>
+        <tr>
+          <th class="sortable" onclick="sortTable(0)">Ticker</th>
+          <th class="sortable" onclick="sortTable(1)">Price</th>
+          <th class="sortable" onclick="sortTable(2)">Change (%)</th>
+          <th class="sortable" onclick="sortTable(3)">Volume</th>
+          <th class="sortable" onclick="sortTable(4)">Market Cap</th>
+          <th class="sortable" onclick="sortTable(5)">Short Interest</th>
+          <th class="sortable" onclick="sortTable(6)">Issued Shares</th>
+          <th class="sortable" onclick="sortTable(7)">Outstanding Shares</th>
+          <th class="sortable" onclick="sortTable(8)">Float</th>
+          <th class="sortable" onclick="sortTable(9)">Float %</th>
+          <th>Sentiment</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td colspan="11">Loading...</td></tr>
+      </tbody>
+    </table>
   </div>
 
-  <div class="section">
-    <h2>🔔 Custom Alerts Setup</h2>
-    <ul>
-      <li>✅ GME alert @ $22.00 – Price breakout trigger</li>
-      <li>✅ AMC alert if volume > 25M – Possible squeeze start</li>
-      <li>✅ PLTR RSI alert < 30 – Oversold opportunity</li>
-      <li>✅ WKHS price + volume surge – Squeeze watch</li>
-    </ul>
-    <p>Use tools like <a href="https://www.tradingview.com/alerts/" target="_blank">TradingView Alerts</a> or <a href="https://www.webull.com/" target="_blank">Webull</a> to automate this.</p>
-  </div>
+  <script>
+    const tickers = ['GME', 'AMC', 'PLTR', 'WKHS', 'BB', 'SNDL', 'NIO', 'TSLA', 'CLOV', 'MVIS', 'RIOT', 'MARA', 'SOFI'];
+    const twelveKey = 'c092bc61884c41889163f8c4e884c908';
+    const fmpKey = 'demo'; // Replace with your actual FMP API key
+    let stockDataCache = [];
 
-  <div class="section">
-    <h2>📈 Sentiment Trends</h2>
-    <iframe src="https://apewisdom.io/" title="WSB Sentiment Tracker"></iframe>
-  </div>
+    async function fetchStockData() {
+      const tableBody = document.querySelector('#stock-table tbody');
+      const filterPrice = document.querySelector('#filterPrice').checked;
+      const filterVolume = document.querySelector('#filterVolume').checked;
+      tableBody.innerHTML = '';
+      stockDataCache = [];
 
-  <div class="section">
-    <h2>💡 Options Flow (Live)</h2>
-    <iframe src="https://unusualwhales.com/live" title="Unusual Options Flow"></iframe>
-  </div>
+      for (const symbol of tickers) {
+        try {
+          const [quoteRes, sharesRes] = await Promise.all([
+            fetch(`https://api.twelvedata.com/quote?symbol=${symbol}&apikey=${twelveKey}`),
+            fetch(`https://financialmodelingprep.com/api/v3/key-metrics-ttm/${symbol}?apikey=${fmpKey}`)
+          ]);
+
+          const data = await quoteRes.json();
+          const sharesData = await sharesRes.json();
+          if (data.code || !sharesData[0]) throw new Error(data.message || 'FMP data error');
+
+          const price = parseFloat(data.close);
+          const volume = parseInt(data.volume);
+          const marketCap = data.market_cap || 'N/A';
+          const shortInterest = data.fifty_two_week.high || 'N/A';
+          const issuedShares = sharesData[0].sharesOutstanding || 'N/A';
+          const outstandingShares = sharesData[0].sharesOutstanding || 'N/A';
+          const floatShares = sharesData[0].floatShares || 'N/A';
+
+          const floatRatio = (floatShares && outstandingShares && floatShares !== 'N/A' && outstandingShares !== 'N/A')
+            ? (floatShares / outstandingShares) * 100
+            : 'N/A';
+
+          const sentiment = parseFloat(data.percent_change) > 5 ? '🚀' : (parseFloat(data.percent_change) < -5 ? '💀' : '🧐');
+
+          if ((filterPrice && price <= 5) || (filterVolume && volume <= 1000000)) continue;
+
+          stockDataCache.push({ symbol, price, change: data.percent_change, volume, marketCap, shortInterest, issuedShares, outstandingShares, floatShares, floatRatio });
+
+          const highlight = floatRatio !== 'N/A' && floatRatio < 20 ? 'class="highlight"' : '';
+
+          const row = `<tr onclick="showChart('${symbol}')" ${highlight}>
+            <td>${symbol}</td>
+            <td>$${price.toFixed(2)}</td>
+            <td style="color:${data.percent_change >= 0 ? 'lime' : 'red'}">${data.percent_change}%</td>
+            <td>${volume.toLocaleString()}</td>
+            <td>${marketCap}</td>
+            <td>${shortInterest}</td>
+            <td>${issuedShares}</td>
+            <td>${outstandingShares}</td>
+            <td>${floatShares}</td>
+            <td>${floatRatio !== 'N/A' ? floatRatio.toFixed(1) + '%' : 'N/A'}</td>
+            <td>${sentiment}</td>
+          </tr>`;
+
+          tableBody.innerHTML += row;
+        } catch (error) {
+          tableBody.innerHTML += `<tr><td colspan="11">Error fetching ${symbol}: ${error.message}</td></tr>`;
+        }
+      }
+    }
+
+    function exportToCSV() {
+      const csv = ['Ticker,Price,Change (%),Volume,Market Cap,Short Interest,Issued Shares,Outstanding Shares,Float,Float %'];
+      stockDataCache.forEach(row => {
+        csv.push(`${row.symbol},${row.price},${row.change},${row.volume},${row.marketCap},${row.shortInterest},${row.issuedShares},${row.outstandingShares},${row.floatShares},${typeof row.floatRatio === 'number' ? row.floatRatio.toFixed(1) + '%' : 'N/A'}`);
+      });
+      const blob = new Blob([csv.join('\\n')], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'meme_stocks.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function showChart(symbol) {
+      window.open(`https://www.tradingview.com/symbols/${symbol}`, '_blank');
+    }
+
+    function sortTable(colIndex) {
+      const table = document.getElementById('stock-table');
+      const tbody = table.tBodies[0];
+      const rows = Array.from(tbody.rows);
+      const isNumeric = !isNaN(rows[0].cells[colIndex].textContent.replace(/[$,%]/g, ''));
+      const sortedRows = rows.sort((a, b) => {
+        const aText = a.cells[colIndex].textContent.replace(/[$,%]/g, '');
+        const bText = b.cells[colIndex].textContent.replace(/[$,%]/g, '');
+        return isNumeric ? parseFloat(aText) - parseFloat(bText) : aText.localeCompare(bText);
+      });
+      tbody.innerHTML = '';
+      sortedRows.forEach(row => tbody.appendChild(row));
+    }
+
+    document.getElementById('filterPrice').addEventListener('change', fetchStockData);
+    document.getElementById('filterVolume').addEventListener('change', fetchStockData);
+
+    fetchStockData();
+    setInterval(fetchStockData, 60000);
+  </script>
+
 </body>
 </html>
